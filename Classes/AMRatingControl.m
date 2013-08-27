@@ -36,23 +36,19 @@ static const NSString *kDefaultSolidChar = @"★";
 
 /**************************************************************************************************/
 #pragma mark - Getters & Setters
-
+@synthesize emptyColor = _emptyColor;
+@synthesize solidColor = _solidColor;
+@synthesize emptyImage = _emptyImage;
+@synthesize solidImage = _solidImage;
 @synthesize rating = _rating;
+@synthesize maxRating = _maxRating;
+@synthesize starWidthOverride = _starWidthOverride;
 @synthesize starFontSize = _starFontSize;
-@synthesize starWidthAndHeight = _starWidthAndHeight;
 @synthesize starSpacing = _starSpacing;
 
-- (void)setRating:(NSInteger)rating
+- (void)setRating:(NSNumber *)rating
 {
-    _rating = (rating < 0) ? 0 : rating;
-    _rating = (rating > _maxRating) ? _maxRating : rating;
-    [self setNeedsDisplay];
-}
-
-- (void)setStarWidthAndHeight:(NSUInteger)starWidthAndHeight
-{
-    _starWidthAndHeight = starWidthAndHeight;
-    [self adjustFrame];
+    _rating = [NSNumber numberWithInteger:MIN([self.maxRating integerValue], MAX(0, [rating integerValue]))];
     [self setNeedsDisplay];
 }
 
@@ -102,14 +98,6 @@ static const NSString *kDefaultSolidChar = @"★";
                      andMaxRating:maxRating];
 }
 
-- (void)dealloc
-{
-	_emptyImage = nil,
-	_solidImage = nil;
-    _emptyColor = nil;
-    _solidColor = nil;
-}
-
 
 /**************************************************************************************************/
 #pragma mark - View Lifecycle
@@ -118,35 +106,45 @@ static const NSString *kDefaultSolidChar = @"★";
 {
 	CGPoint currPoint = CGPointZero;
 	
-	for (int i = 0; i < _rating; i++)
+    NSInteger width;
+	for (int i = 0; i < [self.rating integerValue]; i++)
 	{
 		if (_solidImage)
         {
             [_solidImage drawAtPoint:currPoint];
+            width = _solidImage.size.width;
         }
 		else
         {
             CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(), _solidColor.CGColor);
-            [kDefaultSolidChar drawAtPoint:currPoint withFont:[UIFont boldSystemFontOfSize:_starFontSize]];
+            [kDefaultSolidChar drawAtPoint:currPoint withFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]];
+            width = [kDefaultSolidChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].width;
         }
-			
-		currPoint.x += (_starWidthAndHeight + _starSpacing);
+        if (self.starWidthOverride)
+            width = [self.starWidthOverride integerValue];
+
+		currPoint.x += (width + _starSpacing);
 	}
 	
-	NSInteger remaining = _maxRating - _rating;
+	NSInteger remaining = [self.maxRating integerValue] - [self.rating integerValue];
 	
 	for (int i = 0; i < remaining; i++)
 	{
 		if (_emptyImage)
         {
 			[_emptyImage drawAtPoint:currPoint];
+            width = _emptyImage.size.width;
         }
 		else
         {
             CGContextSetFillColorWithColor(UIGraphicsGetCurrentContext(), _emptyColor.CGColor);
-			[kDefaultEmptyChar drawAtPoint:currPoint withFont:[UIFont boldSystemFontOfSize:_starFontSize]];
+			[kDefaultEmptyChar drawAtPoint:currPoint withFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]];
+            width = [kDefaultEmptyChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].width;
         }
-		currPoint.x += (_starWidthAndHeight + _starSpacing);
+        if (self.starWidthOverride)
+            width = [self.starWidthOverride integerValue];
+
+		currPoint.x += (width + _starSpacing);
 	}
 }
 
@@ -182,12 +180,27 @@ static const NSString *kDefaultSolidChar = @"★";
             solidColor:(UIColor *)solidColor
           andMaxRating:(NSInteger)maxRating
 {
+    
+    NSInteger width = MAX([kDefaultEmptyChar sizeWithFont:[UIFont boldSystemFontOfSize:kFontSize]].width, [kDefaultSolidChar sizeWithFont:[UIFont boldSystemFontOfSize:kFontSize]].width);
+    NSInteger height = MAX([kDefaultEmptyChar sizeWithFont:[UIFont boldSystemFontOfSize:kFontSize]].height, [kDefaultSolidChar sizeWithFont:[UIFont boldSystemFontOfSize:kFontSize]].height);
+    
+    if (emptyImageOrNil)
+    {
+        width = MAX(width, emptyImageOrNil.size.width);
+        height = MAX(height, emptyImageOrNil.size.height);
+    }
+    if (solidImageOrNil)
+    {
+        width = MAX(width, solidImageOrNil.size.width);
+        height = MAX(height, solidImageOrNil.size.height);
+    }
+
     if (self = [self initWithFrame:CGRectMake(location.x,
                                               location.y,
-                                              (maxRating * kStarWidthAndHeight),
-                                              kStarWidthAndHeight)])
+                                              (maxRating * width),
+                                              height)])
 	{
-		_rating = 0;
+		self.rating = [NSNumber numberWithInteger:0];
 		self.backgroundColor = [UIColor clearColor];
 		self.opaque = NO;
 		
@@ -195,58 +208,86 @@ static const NSString *kDefaultSolidChar = @"★";
 		_solidImage = solidImageOrNil;
         _emptyColor = emptyColor;
         _solidColor = solidColor;
-        _maxRating = maxRating;
-        _starFontSize = kFontSize;
-        _starWidthAndHeight = kStarWidthAndHeight;
+        _maxRating = [NSNumber numberWithInteger:maxRating];
+        _starFontSize = [NSNumber numberWithInteger:kFontSize];
         _starSpacing = kStarSpacing;
 	}
 	
 	return self;
 }
 
+- (NSInteger)starWidth
+{
+    NSInteger width = MAX([kDefaultEmptyChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].width, [kDefaultSolidChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].width);
+
+    if (_emptyImage)
+        width = MAX(width, _emptyImage.size.width);
+
+    if (_solidImage)
+        width = MAX(width, _solidImage.size.width);
+    
+    return width;
+}
+
+- (NSInteger)starHeight
+{
+    NSInteger height = MAX([kDefaultEmptyChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].height, [kDefaultSolidChar sizeWithFont:[UIFont boldSystemFontOfSize:[self.starFontSize integerValue]]].height);
+    
+    if (_emptyImage)
+        height = MAX(height, _emptyImage.size.height);
+    
+    if (_solidImage)
+        height = MAX(height, _solidImage.size.height);
+    
+    return height;
+}
+
 - (void)adjustFrame
 {
-    CGRect newFrame = CGRectMake(self.frame.origin.x, self.frame.origin.y, _maxRating * _starWidthAndHeight + (_maxRating - 1) * _starSpacing, _starWidthAndHeight);
+    CGRect newFrame = CGRectMake(self.frame.origin.x,
+                                 self.frame.origin.y,
+                                 [self.maxRating integerValue] * [self starWidth] + ([self.maxRating integerValue] - 1) * _starSpacing,
+                                 [self starHeight]);
     self.frame = newFrame;
 }
 
 - (void)handleTouch:(UITouch *)touch
 {
     CGFloat width = self.frame.size.width;
-	CGRect section = CGRectMake(0, 0, _starWidthAndHeight, self.frame.size.height);
+	CGRect section = CGRectMake(0, 0, [self starWidth], self.frame.size.height);
 	
 	CGPoint touchLocation = [touch locationInView:self];
 	
 	if (touchLocation.x < 0)
 	{
-		if (_rating != 0)
+		if ([self.rating integerValue] != 0)
 		{
-			_rating = 0;
+       		self.rating = [NSNumber numberWithInteger:0];
 			[self sendActionsForControlEvents:UIControlEventEditingChanged];
 		}
 	}
 	else if (touchLocation.x > width)
 	{
-		if (_rating != _maxRating)
+		if (![self.rating isEqualToNumber:self.maxRating])
 		{
-			_rating = _maxRating;
+            self.rating = [self.maxRating copy];
 			[self sendActionsForControlEvents:UIControlEventEditingChanged];
 		}
 	}
 	else
 	{
-		for (int i = 0 ; i < _maxRating ; i++)
+		for (int i = 0 ; i < [self.maxRating integerValue] ; i++)
 		{
-			if ((touchLocation.x > section.origin.x) && (touchLocation.x < (section.origin.x + _starWidthAndHeight)))
+			if ((touchLocation.x > section.origin.x) && (touchLocation.x < (section.origin.x + [self starWidth])))
 			{
-				if (_rating != (i+1))
+				if ([self.rating integerValue] != (i+1))
 				{
-					_rating = i+1;
+              		self.rating = [NSNumber numberWithInteger:i+1];
 					[self sendActionsForControlEvents:UIControlEventEditingChanged];
 				}
 				break;
 			}
-			section.origin.x += (_starWidthAndHeight + _starSpacing);
+			section.origin.x += ([self starWidth] + _starSpacing);
 		}
 	}
 	[self setNeedsDisplay];

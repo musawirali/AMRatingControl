@@ -27,7 +27,7 @@
                                                                   andMaxRating:5];
     
     // Customize the current rating if needed
-    [simpleRatingControl setRating:3];
+    simpleRatingControl.rating = [NSNumber numberWithInteger:3];
     [simpleRatingControl setStarSpacing:10];
     
     // Listen to control events
@@ -69,16 +69,16 @@
 /**************************************************************************************************/
 #pragma mark - Private Methods
 
-- (void)updateRating:(id)sender
+- (void)updateRating:(AMRatingControl *)sender
 {
-	NSLog(@"Rating: %d", [(AMRatingControl *)sender rating]);
-	[label setText:[NSString stringWithFormat:@"%d", [(AMRatingControl *)sender rating]]];
+	NSLog(@"Rating: %d", [sender.rating integerValue]);
+	[label setText:[NSString stringWithFormat:@"%d", [sender.rating integerValue]]];
 }
 
-- (void)updateEndRating:(id)sender
+- (void)updateEndRating:(AMRatingControl *)sender
 {
-    NSLog(@"End Rating: %d", [(AMRatingControl *)sender rating]);
-	[endLabel setText:[NSString stringWithFormat:@"%d", [(AMRatingControl *)sender rating]]];
+    NSLog(@"End Rating: %d", [sender.rating integerValue]);
+	[endLabel setText:[NSString stringWithFormat:@"%d", [sender.rating integerValue]]];
 }
 
 

@@ -8,19 +8,19 @@
 
 
 @interface AMRatingControl : UIControl
-{
-	UIImage *_emptyImage, *_solidImage;
-    UIColor *_emptyColor, *_solidColor;
-    NSInteger _maxRating;
-}
-
 
 /**************************************************************************************************/
 #pragma mark - Getters and Setters
 
-@property (nonatomic, assign) NSInteger rating;
-@property (nonatomic, readwrite) NSUInteger starFontSize;
-@property (nonatomic, readwrite) NSUInteger starWidthAndHeight;
+@property (nonatomic, retain) UIColor *emptyColor;
+@property (nonatomic, retain) UIColor *solidColor;
+@property (nonatomic, retain) UIImage *emptyImage;
+@property (nonatomic, retain) UIImage *solidImage;
+@property (nonatomic, retain) NSNumber *rating;
+@property (nonatomic, retain) NSNumber *maxRating;
+
+@property (nonatomic, retain) NSNumber *starWidthOverride;
+@property (nonatomic, retain) NSNumber *starFontSize;
 @property (nonatomic, readwrite) NSUInteger starSpacing;
 
 /**************************************************************************************************/
